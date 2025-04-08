@@ -1,3 +1,5 @@
 #無視したい拡張子
 *.xml
 *.csv
+__pycache__/
+*.pyc
