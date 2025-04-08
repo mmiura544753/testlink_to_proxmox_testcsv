@@ -132,42 +132,37 @@ def convert_xml_to_csv(testcases_root, testsuite_name, output_csv_file):
                     if cf_name:
                         custom_field_values[cf_name] = cf_value
 
+            # デフォルト値（ステップがない場合や最初のステップを使用）
+            step_number = ""
+            actions = ""
+            expected = ""
+            step_exec_type = tc_exec_type  # デフォルトはテストケースのexecution_type
+
+            # ステップがあれば最初のステップ（ステップ1）を取得
             steps = testcase.find("steps")
             if steps is not None and len(steps) > 0:
-                for step in steps.findall("step"):
-                    step_number = get_element_text(step, "step_number")
-                    actions = clean_html(get_element_text(step, "actions"))
-                    expected = clean_html(get_element_text(step, "expectedresults"))
-                    step_exec_type_elem = step.find("execution_type")
-                    step_exec_type = step_exec_type_elem.text.strip() if step_exec_type_elem is not None and step_exec_type_elem.text else ""
+                first_step = steps.find("step")  # 最初のステップを取得
+                if first_step is not None:
+                    step_number = get_element_text(first_step, "step_number")
+                    actions = clean_html(get_element_text(first_step, "actions"))
+                    expected = clean_html(get_element_text(first_step, "expectedresults"))
+                    step_exec_type_elem = first_step.find("execution_type")
+                    if step_exec_type_elem is not None and step_exec_type_elem.text:
+                        step_exec_type = step_exec_type_elem.text.strip()
 
-                    # 基本データの行
-                    row = [
-                        testcase_id, external_id, version, testcase_name, summary,
-                        importance, preconditions, step_number, actions, expected,
-                        step_exec_type, exec_duration, status, is_active, is_open,
-                        testsuite_name
-                    ]
-                    
-                    # カスタムフィールド値を追加
-                    for cf_name in custom_field_names:
-                        row.append(custom_field_values.get(cf_name, ""))
-                    
-                    rows.append(row)
-            else:
-                # ステップがない場合
-                row = [
-                    testcase_id, external_id, version, testcase_name, summary,
-                    importance, preconditions, "", "", "", # ステップ関連は空
-                    tc_exec_type, exec_duration, status, is_active, is_open, # 実行タイプはTestcaseのものを採用
-                    testsuite_name
-                ]
-                
-                # カスタムフィールド値を追加
-                for cf_name in custom_field_names:
-                    row.append(custom_field_values.get(cf_name, ""))
-                
-                rows.append(row)
+            # 1テストケースにつき1行のみを出力
+            row = [
+                testcase_id, external_id, version, testcase_name, summary,
+                importance, preconditions, step_number, actions, expected,
+                step_exec_type, exec_duration, status, is_active, is_open,
+                testsuite_name
+            ]
+            
+            # カスタムフィールド値を追加
+            for cf_name in custom_field_names:
+                row.append(custom_field_values.get(cf_name, ""))
+            
+            rows.append(row)
 
         # CSVファイル書き込み
         with codecs.open(output_csv_file, 'w', 'shift_jis', errors='ignore') as f:
